@@ -1,0 +1,101 @@
+---
+# Playbook principal de Ansible
+
+- name: Setup ACR and images
+  hosts: localhost
+  tasks:
+    - name: Log in to Azure Container Registry
+      azure.azcollection.azure_rm_acr:
+        name: "{{ acr_name }}"  # Nombre del ACR
+        resource_group: "{{ resource_group_name }}"  # Nombre del grupo de recursos
+        login_server: "{{ acr_login_server }}"  # Servidor de inicio de sesión del ACR
+        state: present  # Asegura que el ACR esté presente y configurado
+
+- name: Setup Webserver
+  hosts: vm
+  tasks:
+    - name: Install Nginx
+      ansible.builtin.yum:
+        name: nginx  # Nombre del paquete a instalar
+        state: present  # Asegura que Nginx esté instalado
+
+    - name: Start and enable Nginx
+      ansible.builtin.service:
+        name: nginx  # Nombre del servicio
+        state: started  # Inicia el servicio de Nginx
+        enabled: yes  # Habilita el servicio para que se inicie en el arranque
+
+    - name: Copy index.html to web server
+      ansible.builtin.copy:
+        src: C:\Users\kingl\terraform-directory\ansible\web\index.html  # Ruta del archivo web en tu sistema
+        dest: /usr/share/nginx/html/index.html  # Ruta de destino en el servidor web
+
+- name: Setup AKS
+  hosts: localhost
+  tasks:
+    - name: Log in to Azure
+      azure.azcollection.azure_rm:
+        client_id: "{{ azure_client_id }}"  # ID del cliente de Azure
+        secret: "{{ azure_secret }}"  # Secreto del cliente de Azure
+        tenant: "{{ azure_tenant }}"  # ID del tenant de Azure
+        subscription_id: "{{ azure_subscription_id }}"  # ID de la suscripción de Azure
+
+    - name: Get AKS credentials
+      azure.azcollection.azure_rm_aks:
+        name: "{{ aks_cluster_name }}"  # Nombre del clúster de AKS
+        resource_group: "{{ resource_group_name }}"  # Nombre del grupo de recursos
+        state: present  # Asegura que el clúster de AKS esté presente
+        register: aks  # Guarda las credenciales de AKS
+
+    - name: Create namespace
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: webapp  # Crea un namespace llamado 'webapp'
+
+    - name: Create deployment
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: webserver  # Nombre del despliegue
+            namespace: webapp  # Despliega en el namespace 'webapp'
+          spec:
+            replicas: 1  # Número de réplicas del pod
+            selector:
+              matchLabels:
+                app: webserver  # Selector de etiquetas
+            template:
+              metadata:
+                labels:
+                  app: webserver  # Etiquetas del pod
+              spec:
+                containers:
+                - name: webserver  # Nombre del contenedor
+                  image: "{{ acr_login_server }}/nginx:latest"  # Imagen de Nginx desde ACR
+                  ports:
+                  - containerPort: 80  # Puerto expuesto
+
+    - name: Create service
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: webserver  # Nombre del servicio
+            namespace: webapp  # Servicio en el namespace 'webapp'
+          spec:
+            selector:
+              app: webserver  # Selector de etiquetas
+            ports:
+            - protocol: TCP
+              port: 80  # Puerto del servicio
+              targetPort: 80  # Puerto del contenedor
+            type: LoadBalancer  # Tipo de servicio LoadBalancer
+

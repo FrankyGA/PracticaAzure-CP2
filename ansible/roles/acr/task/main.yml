@@ -1,0 +1,11 @@
+---
+# Rol para configurar el Azure Container Registry (ACR)
+
+- name: Log in to Azure Container Registry
+  azure.azcollection.azure_rm_acr:
+    name: "{{ acr_name }}"
+    resource_group: "{{ resource_group_name }}"
+    login_server: "{{ acr_login_server }}"
+    state: present  
+
+

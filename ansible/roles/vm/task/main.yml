@@ -1,0 +1,19 @@
+---
+# Rol para configurar el servidor web en la máquina virtual
+
+- name: Install Nginx
+  ansible.builtin.yum:
+    name: nginx
+    state: present  # Asegura que Nginx esté instalado
+
+- name: Start and enable Nginx
+  ansible.builtin.service:
+    name: nginx
+    state: started  # Inicia el servicio de Nginx
+    enabled: yes  # Habilita el servicio para que se inicie en el arranque
+
+- name: Copy index.html to web server
+  ansible.builtin.copy:
+    src: C:\Users\kingl\terraform-directory\ansible\web\index.html  # Ruta del archivo web en tu sistema
+    dest: /usr/share/nginx/html/index.html  # Ruta de destino en el servidor web
+

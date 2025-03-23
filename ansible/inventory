@@ -1,0 +1,26 @@
+# Inventario de Ansible
+
+# Grupo de máquinas virtuales
+[vm]
+13.93.81.174 ansible_ssh_private_key_file=private_key.pem  # IP de la máquina virtual Linux generada en Azure y archivo de clave privada SSH
+
+# Grupo de registro de contenedores de Azure
+[acr]
+localhost  # Localhost se utilizará para los roles de ACR y AKS
+
+# Variables comunes para todos los grupos
+[all:vars]
+acr_name=casopractico2acr12345  # Nombre del Azure Container Registry
+aks_cluster_name=casopractico2aks  # Nombre del clúster de AKS
+resource_group_name=casopractico2-rg  # Nombre del grupo de recursos
+acr_login_server=casopractico2acr12345.azurecr.io  # Servidor de inicio de sesión del ACR
+azure_client_id=4b0af3f9-868a-443f-b556-f02679c12708  # ID del cliente de Azure
+azure_tenant=
+azure_subscription_id=4b0af3f9-868a-443f-b556-f02679c12708  # ID de la suscripción de Azure
+
+# Grupo de localhost
+[localhost]
+127.0.0.1 ansible_connection=local  # Localhost para ejecutar los playbooks de Ansible
+
+
+

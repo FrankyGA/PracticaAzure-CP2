@@ -1,0 +1,57 @@
+---
+# Rol para desplegar la aplicación en AKS
+
+- name: Create namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: webapp  # Crea un namespace llamado 'webapp'
+
+- name: Create deployment
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: webserver
+        namespace: webapp  # Despliega en el namespace 'webapp'
+      spec:
+        replicas: 1  # Número de réplicas del pod
+        selector:
+          matchLabels:
+            app: webserver  # Selector de etiquetas
+        template:
+          metadata:
+            labels:
+              app: webserver  # Etiquetas del pod
+          spec:
+            containers:
+            - name: webserver  # Nombre del contenedor
+              image: "{{ acr_login_server }}/nginx:latest"  # Imagen de Nginx desde ACR
+              ports:
+              - containerPort: 80  # Puerto expuesto
+
+- name: Create service
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: webserver
+        namespace: webapp  # Servicio en el namespace 'webapp'
+      spec:
+        selector:
+          app: webserver  # Selector de etiquetas
+        ports:
+        - protocol: TCP
+          port: 80  # Puerto del servicio
+          targetPort: 80  # Puerto del contenedor
+        type: LoadBalancer  # Tipo de servicio LoadBalancer
+
+
+
